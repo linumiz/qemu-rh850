@@ -278,6 +278,45 @@ static void rh850_u2a_class_init(ObjectClass *oc, const void *data)
     mc->desc = uc->chip->desc;
 }
 
+static const RH850U2XChip rh850_u2b_chip = {
+    .desc = "Renesas RH850/U2B24 (G4MH2, CPU0 only)",
+    .sysctl_chip = "u2b",
+    .pid = 0x07840f01,
+    .cflash_size = 24 * MiB,
+    .cpuperi_size = 0x1c000,
+    .cram = {
+        { 0xfe000000, 512 * KiB },
+        { 0xfe080000, 512 * KiB },
+        { 0xfe100000, 512 * KiB },
+        { 0xfe800000, 0x220000 },
+    },
+    .intc_channels = 1024,
+    .ostm_base = { 0xffbf0000, 0xff89a100 },
+    .ostm_irq = { 360, 361 },
+    .rlin3_base = {
+        0xffc7c000, 0xff89b100, 0xffc7c200, 0xff89b300,
+        0xffc7c400, 0xff89b500, 0xffc7c600, 0xff89b700,
+        0xffc7c800, 0xff89b900, 0xffc7ca00, 0xff89bb00,
+        0xffc7cc00, 0xff89bd00, 0xffc7ce00, 0xff89bf00,
+        0xffc7d000, 0xff89c100, 0xffc7d200, 0xff89c300,
+        0xffc7d400, 0xff89c500, 0xffc7d600, 0xff978000,
+    },
+    .rlin3_irq = {
+        620, 625, 630, 635, 640, 644, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 648,
+    },
+};
+
+static void rh850_u2b_class_init(ObjectClass *oc, const void *data)
+{
+    MachineClass *mc = MACHINE_CLASS(oc);
+    RH850U2XMachineClass *uc = RH850_U2X_MACHINE_CLASS(oc);
+
+    uc->chip = &rh850_u2b_chip;
+    mc->desc = uc->chip->desc;
+}
+
 static const TypeInfo rh850_u2x_types[] = {
     {
         .name           = TYPE_RH850_U2X_MACHINE,
@@ -291,6 +330,10 @@ static const TypeInfo rh850_u2x_types[] = {
         .name           = TYPE_RH850_U2A_MACHINE,
         .parent         = TYPE_RH850_U2X_MACHINE,
         .class_init     = rh850_u2a_class_init,
+    }, {
+        .name           = TYPE_RH850_U2B_MACHINE,
+        .parent         = TYPE_RH850_U2X_MACHINE,
+        .class_init     = rh850_u2b_class_init,
     },
 };
 
