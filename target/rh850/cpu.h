@@ -152,6 +152,7 @@ struct ArchCPU {
     const RH850CPUDef *def;
 
     uint32_t rbase;
+    uint32_t pid;
 
     qemu_irq intc_ack[RH850_CPU_NACK];
 };

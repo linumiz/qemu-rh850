@@ -64,7 +64,7 @@ void rh850_sysreg_reset(CPURH850State *env)
             env->sr[r->sel][r->id] = r->reset;
         }
     }
-    RH850_SR(env, RH850_SR_PID) = def->pid;
+    RH850_SR(env, RH850_SR_PID) = env_archcpu(env)->pid;
     RH850_SR(env, RH850_SR_MPCFG) |= def->mpu_entries - 1;
 }
 

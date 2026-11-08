@@ -160,6 +160,7 @@ static void rh850_cpu_init(Object *obj)
     RH850CPU *cpu = RH850_CPU(obj);
 
     cpu->def = RH850_CPU_GET_CLASS(obj)->def;
+    cpu->pid = cpu->def->pid;
     qdev_init_gpio_in(DEVICE(obj), rh850_cpu_set_irq, RH850_INTC_OUT_NUM);
     qdev_init_gpio_out_named(DEVICE(obj), cpu->intc_ack, "intc-ack",
                              RH850_INTC_ACK_NUM);
@@ -302,6 +303,7 @@ void rh850_cpu_dump_state(CPUState *cs, FILE *f, int flags)
 
 static const Property rh850_cpu_properties[] = {
     DEFINE_PROP_UINT32("rbase", RH850CPU, rbase, 0),
+    DEFINE_PROP_UINT32("pid", RH850CPU, pid, 0),
 };
 
 static int rh850_cpu_post_load(void *opaque, int version_id)
