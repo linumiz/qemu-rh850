@@ -21,7 +21,7 @@ foreach t: ['t001', 't010', 't012', 't020', 't030', 't150', 't151', 't163',
 endforeach
 
 foreach m: [['rh850-u2a', ['t341', 't342', 't343', 't344', 't345', 't346']],
-             ['rh850-u2b', ['t347']]]
+             ['rh850-u2b', ['t347', 't348']]]
   foreach t: m[1]
     tests += {t + '.s': {'cflags': asmflags,
                          'qemu_args': ['-M', m[0] + ',test-exit=on',
