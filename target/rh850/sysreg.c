@@ -12,13 +12,24 @@
 
 #include "sysreg-table.c.inc"
 
-static const RH850SysRegInfo *rh850_sysreg_find(unsigned sel, unsigned id)
-{
-    size_t i;
+const RH850CPUDef rh850_g4kh_def = {
+    .pid = 0x08040701u,
+    .prio_bits = 4,
+    .mpu_entries = 24,
+    .nsysregs = ARRAY_SIZE(rh850_g4kh_sysregs),
+    .sysregs = rh850_g4kh_sysregs,
+    .insns = 0,
+};
 
-    for (i = 0; i < ARRAY_SIZE(rh850_sysregs); i++) {
-        if (rh850_sysregs[i].sel == sel && rh850_sysregs[i].id == id) {
-            return &rh850_sysregs[i];
+static const RH850SysRegInfo *rh850_sysreg_find(CPURH850State *env,
+                                                unsigned sel, unsigned id)
+{
+    const RH850CPUDef *def = env_archcpu(env)->def;
+    unsigned i;
+
+    for (i = 0; i < def->nsysregs; i++) {
+        if (def->sysregs[i].sel == sel && def->sysregs[i].id == id) {
+            return &def->sysregs[i];
         }
     }
     return NULL;
@@ -26,20 +37,23 @@ static const RH850SysRegInfo *rh850_sysreg_find(unsigned sel, unsigned id)
 
 void rh850_sysreg_reset(CPURH850State *env)
 {
-    size_t i;
+    const RH850CPUDef *def = env_archcpu(env)->def;
+    unsigned i;
 
-    for (i = 0; i < ARRAY_SIZE(rh850_sysregs); i++) {
-        const RH850SysRegInfo *r = &rh850_sysregs[i];
+    for (i = 0; i < def->nsysregs; i++) {
+        const RH850SysRegInfo *r = &def->sysregs[i];
 
         if (!(r->flags & (RH850_SRF_PSW | RH850_SRF_MPIDX))) {
             env->sr[r->sel][r->id] = r->reset;
         }
     }
+    RH850_SR(env, RH850_SR_PID) = def->pid;
+    RH850_SR(env, RH850_SR_MPCFG) |= def->mpu_entries - 1;
 }
 
-uint32_t rh850_sysreg_wmask(unsigned n)
+uint32_t rh850_sysreg_wmask(CPURH850State *env, unsigned n)
 {
-    return rh850_sysreg_find(n >> 5, n & 31)->wmask;
+    return rh850_sysreg_find(env, n >> 5, n & 31)->wmask;
 }
 
 static void rh850_sysreg_check(CPURH850State *env, const RH850SysRegInfo *r,
@@ -94,9 +108,9 @@ static void rh850_sysreg_check(CPURH850State *env, const RH850SysRegInfo *r,
 static uint32_t *rh850_mpu_slot(CPURH850State *env, unsigned id)
 {
     unsigned idx = RH850_SR(env, RH850_SR_MPIDX);
-    unsigned nmpue = RH850_SR(env, RH850_SR_MPCFG) & 0x1f;
+    unsigned nmpue = RH850_SR(env, RH850_SR_MPCFG) & RH850_MPCFG_NMPUE;
 
-    if (idx > nmpue || idx >= RH850_MPU_ENTRIES) {
+    if (idx > nmpue || idx >= env_archcpu(env)->def->mpu_entries) {
         return NULL;
     }
     switch (id) {
@@ -153,7 +167,7 @@ static bool rh850_fpview(CPURH850State *env, unsigned n, bool write,
 bool rh850_sysreg_get(CPURH850State *env, unsigned sel, unsigned id,
                       uint32_t *val)
 {
-    const RH850SysRegInfo *r = rh850_sysreg_find(sel, id);
+    const RH850SysRegInfo *r = rh850_sysreg_find(env, sel, id);
     uint32_t *slot;
 
     if (!r) {
@@ -177,14 +191,15 @@ uint32_t HELPER(stsr)(CPURH850State *env, uint32_t sel, uint32_t id)
 {
     uint32_t val;
 
-    rh850_sysreg_check(env, rh850_sysreg_find(sel, id), id, false, GETPC());
+    rh850_sysreg_check(env, rh850_sysreg_find(env, sel, id), id, false,
+                       GETPC());
     return rh850_sysreg_get(env, sel, id, &val) ? val : 0;
 }
 
 bool rh850_sysreg_set(CPURH850State *env, unsigned sel, unsigned id,
                       uint32_t val)
 {
-    const RH850SysRegInfo *r = rh850_sysreg_find(sel, id);
+    const RH850SysRegInfo *r = rh850_sysreg_find(env, sel, id);
     uint32_t *slot;
     uint32_t mask;
 
@@ -241,6 +256,7 @@ bool rh850_sysreg_set(CPURH850State *env, unsigned sel, unsigned id,
 void HELPER(ldsr)(CPURH850State *env, uint32_t sel, uint32_t id,
                   uint32_t val)
 {
-    rh850_sysreg_check(env, rh850_sysreg_find(sel, id), id, true, GETPC());
+    rh850_sysreg_check(env, rh850_sysreg_find(env, sel, id), id, true,
+                       GETPC());
     rh850_sysreg_set(env, sel, id, val);
 }

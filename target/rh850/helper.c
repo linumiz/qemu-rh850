@@ -198,7 +198,7 @@ G_NORETURN void HELPER(syscall)(CPURH850State *env, uint32_t vector)
 static void rh850_return(CPURH850State *env, uint32_t pc, uint32_t psw)
 {
     env->pc = pc & ~1u;
-    rh850_cpu_unpack_psw(env, psw & rh850_sysreg_wmask(RH850_SR_PSWREG));
+    rh850_cpu_unpack_psw(env, psw & rh850_sysreg_wmask(env, RH850_SR_PSWREG));
     env->ll_valid = 0;
 }
 
@@ -244,7 +244,7 @@ G_NORETURN void HELPER(halt)(CPURH850State *env)
 
 static void rh850_sr_write(CPURH850State *env, unsigned n, uint32_t val)
 {
-    uint32_t mask = rh850_sysreg_wmask(n);
+    uint32_t mask = rh850_sysreg_wmask(env, n);
 
     RH850_SR(env, n) = (RH850_SR(env, n) & ~mask) | (val & mask);
 }

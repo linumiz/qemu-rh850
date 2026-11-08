@@ -35,6 +35,7 @@ typedef struct DisasContext {
     bool um;
     bool cu0;
     bool fpivd;
+    uint32_t insns;
     TCGOp *insn_start;
 } DisasContext;
 
@@ -631,6 +632,7 @@ static void rh850_tr_init_disas_context(DisasContextBase *dcbase, CPUState *cs)
     ctx->um = FIELD_EX32(ctx->base.tb->flags, PSW, UM);
     ctx->cu0 = ctx->base.tb->flags & RH850_TBFLAG_CU0;
     ctx->fpivd = ctx->base.tb->flags & RH850_TBFLAG_FPIVD;
+    ctx->insns = env_archcpu(ctx->env)->def->insns;
 }
 
 static void rh850_tr_tb_start(DisasContextBase *dcbase, CPUState *cs)

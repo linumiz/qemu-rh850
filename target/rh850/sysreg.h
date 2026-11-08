@@ -26,7 +26,7 @@ enum {
     RH850_SRF_MPIDX = 1 << 4,
 };
 
-typedef struct RH850SysRegInfo {
+struct RH850SysRegInfo {
     const char *name;
     uint8_t sel;
     uint8_t id;
@@ -34,7 +34,7 @@ typedef struct RH850SysRegInfo {
     uint32_t wmask;
     uint8_t access;
     uint8_t flags;
-} RH850SysRegInfo;
+};
 
 enum {
     RH850_SR_EIPC = 0 << 5 | 0,
@@ -54,6 +54,7 @@ enum {
     RH850_SR_CTPSW = 0 << 5 | 17,
     RH850_SR_CTBP = 0 << 5 | 20,
     RH850_SR_RBASE = 1 << 5 | 2,
+    RH850_SR_PID = 1 << 5 | 6,
     RH850_SR_EBASE = 1 << 5 | 3,
     RH850_SR_MCTL = 1 << 5 | 5,
     RH850_SR_SVLOCK = 1 << 5 | 8,
@@ -82,9 +83,12 @@ enum {
 #define RH850_BASE_RINT     (1u << 0)
 #define RH850_BASE_DV       (1u << 1)
 #define RH850_INTCFG_ISPC   (1u << 0)
+#define RH850_MPCFG_NMPUE   0x1fu
+
+extern const RH850CPUDef rh850_g4kh_def;
 
 void rh850_sysreg_reset(CPURH850State *env);
-uint32_t rh850_sysreg_wmask(unsigned n);
+uint32_t rh850_sysreg_wmask(CPURH850State *env, unsigned n);
 bool rh850_sysreg_get(CPURH850State *env, unsigned sel, unsigned id,
                       uint32_t *val);
 bool rh850_sysreg_set(CPURH850State *env, unsigned sel, unsigned id,

@@ -129,10 +129,23 @@ typedef struct CPUArchState {
     float_status fp_status;
 } CPURH850State;
 
+typedef struct RH850SysRegInfo RH850SysRegInfo;
+
+typedef struct RH850CPUDef {
+    uint32_t pid;
+    uint8_t prio_bits;
+    uint8_t mpu_entries;
+    uint16_t nsysregs;
+    const RH850SysRegInfo *sysregs;
+    uint32_t insns;
+} RH850CPUDef;
+
 struct ArchCPU {
     CPUState parent_obj;
 
     CPURH850State env;
+
+    const RH850CPUDef *def;
 
     uint32_t rbase;
 
@@ -144,6 +157,8 @@ struct RH850CPUClass {
 
     DeviceRealize parent_realize;
     ResettablePhases parent_phases;
+
+    const RH850CPUDef *def;
 };
 
 #define CPU_RESOLVING_TYPE TYPE_RH850_CPU
