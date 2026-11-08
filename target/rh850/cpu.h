@@ -131,6 +131,10 @@ typedef struct CPUArchState {
 
 typedef struct RH850SysRegInfo RH850SysRegInfo;
 
+enum {
+    RH850_INSN_MP = 1 << 0,
+};
+
 typedef struct RH850CPUDef {
     uint32_t pid;
     uint8_t prio_bits;

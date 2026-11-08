@@ -8,6 +8,7 @@
 #include "cpu.h"
 #include "sysreg.h"
 #include "exec/helper-proto.h"
+#include "accel/tcg/cpu-ldst.h"
 #include "accel/tcg/cpu-loop.h"
 
 #include "sysreg-table.c.inc"
@@ -28,7 +29,7 @@ const RH850CPUDef rh850_g4mh2_def = {
     .mpu_entries = 32,
     .nsysregs = ARRAY_SIZE(rh850_g4mh2_sysregs),
     .sysregs = rh850_g4mh2_sysregs,
-    .insns = 0,
+    .insns = RH850_INSN_MP,
 };
 
 static const RH850SysRegInfo *rh850_sysreg_find(CPURH850State *env,
@@ -285,4 +286,49 @@ void HELPER(ldsr)(CPURH850State *env, uint32_t sel, uint32_t id,
     rh850_sysreg_check(env, rh850_sysreg_find(env, sel, id), id, true,
                        GETPC());
     rh850_sysreg_set(env, sel, id, val);
+}
+
+void HELPER(ldm_mp)(CPURH850State *env, uint32_t adr, uint32_t eh,
+                    uint32_t et)
+{
+    uintptr_t ra = GETPC();
+    uint32_t *regs[3];
+    unsigned n, k;
+
+    adr &= ~3u;
+    for (n = eh; n <= et; n++) {
+        regs[0] = &env->mpla[n];
+        regs[1] = &env->mpua[n];
+        regs[2] = &env->mpat[n];
+        for (k = 0; k < 3; k++) {
+            uint32_t val = cpu_ldl_le_data_ra(env, adr, ra);
+
+            if (!(RH850_SR(env, RH850_SR_SVLOCK) & 1)) {
+                *regs[k] = val & rh850_sysreg_wmask(env, RH850_SR_MPLA + k);
+            }
+            adr += 4;
+        }
+    }
+}
+
+void HELPER(stm_mp)(CPURH850State *env, uint32_t adr, uint32_t eh,
+                    uint32_t et)
+{
+    uintptr_t ra = GETPC();
+    uint32_t regs[3];
+    unsigned n, k;
+
+    adr &= ~3u;
+    for (n = eh; n <= et; n++) {
+        regs[0] = env->mpla[n];
+        regs[1] = env->mpua[n];
+        regs[2] = env->mpat[n];
+        for (k = 0; k < 3; k++) {
+            cpu_stl_le_data_ra(env, adr, regs[k], ra);
+            if (!((adr ^ env->ll_addr) & ~31u)) {
+                env->ll_valid = 0;
+            }
+            adr += 4;
+        }
+    }
 }

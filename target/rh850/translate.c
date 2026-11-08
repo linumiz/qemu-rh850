@@ -367,6 +367,32 @@ static bool trans_RESBANK(DisasContext *ctx, arg_RESBANK *a)
     return true;
 }
 
+static bool trans_LDM_MP(DisasContext *ctx, arg_LDM_MP *a)
+{
+    if (!(ctx->insns & RH850_INSN_MP)) {
+        return false;
+    }
+    if (!gen_check_sv(ctx)) {
+        tcg_gen_movi_i32(cpu_pc, ctx->pc);
+        gen_helper_ldm_mp(tcg_env, get_gpr(a->r1), tcg_constant_i32(a->eh),
+                          tcg_constant_i32(a->et));
+    }
+    return true;
+}
+
+static bool trans_STM_MP(DisasContext *ctx, arg_STM_MP *a)
+{
+    if (!(ctx->insns & RH850_INSN_MP)) {
+        return false;
+    }
+    if (!gen_check_sv(ctx)) {
+        tcg_gen_movi_i32(cpu_pc, ctx->pc);
+        gen_helper_stm_mp(tcg_env, get_gpr(a->r1), tcg_constant_i32(a->eh),
+                          tcg_constant_i32(a->et));
+    }
+    return true;
+}
+
 static TCGv_i32 gen_ld_sr(int n)
 {
     TCGv_i32 t = tcg_temp_new_i32();

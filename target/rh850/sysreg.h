@@ -76,6 +76,7 @@ enum {
     RH850_SR_INTCFG = 2 << 5 | 13,
     RH850_SR_MPCFG = 5 << 5 | 2,
     RH850_SR_MPIDX = 5 << 5 | 16,
+    RH850_SR_MPLA = 5 << 5 | 20,
     RH850_SR_PMUMCTRL = 11 << 5 | 8,
 };
 
