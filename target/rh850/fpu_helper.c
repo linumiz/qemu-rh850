@@ -30,18 +30,16 @@ enum {
 
 enum { FPRM_RN, FPRM_RZ, FPRM_RP, FPRM_RM };
 
-void rh850_fpu_sync(CPURH850State *env)
+static void fp_status_sync(float_status *s, uint32_t sr)
 {
     static const FloatRoundMode rm[4] = {
         float_round_nearest_even, float_round_to_zero, float_round_up,
         float_round_down,
     };
-    uint32_t fpsr = RH850_SR(env, RH850_SR_FPSR);
-    float_status *s = &env->fp_status;
 
-    set_float_rounding_mode(rm[(fpsr >> FPSR_RM_SHIFT) & 3], s);
+    set_float_rounding_mode(rm[(sr >> FPSR_RM_SHIFT) & 3], s);
     set_flush_to_zero(false, s);
-    set_flush_inputs_to_zero(fpsr & FPSR_FS, s);
+    set_flush_inputs_to_zero(sr & FPSR_FS, s);
     set_snan_rule(float_snan_bit_is_zero, s);
     set_default_nan_mode(false, s);
     set_float_default_nan_pattern(0x7f, s);
@@ -51,6 +49,16 @@ void rh850_fpu_sync(CPURH850State *env)
                               float_infzeronan_suppress_invalid, s);
     set_float_detect_tininess(float_tininess_before_rounding, s);
     set_float_ftz_detection(float_ftz_before_rounding, s);
+}
+
+void rh850_fpu_sync(CPURH850State *env)
+{
+    fp_status_sync(&env->fp_status, RH850_SR(env, RH850_SR_FPSR));
+}
+
+void rh850_fxu_sync(CPURH850State *env)
+{
+    fp_status_sync(&env->fxu_status, RH850_SR(env, RH850_SR_FXSR));
 }
 
 bool rh850_fpu_flags(CPURH850State *env, uint32_t causes, bool unimpl,

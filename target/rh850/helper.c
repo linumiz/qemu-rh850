@@ -220,7 +220,7 @@ G_NORETURN void HELPER(syscall)(CPURH850State *env, uint32_t vector)
 static void rh850_return(CPURH850State *env, uint32_t pc, uint32_t psw)
 {
     env->pc = pc & ~1u;
-    rh850_cpu_unpack_psw(env, psw & rh850_sysreg_wmask(env, RH850_SR_PSWREG));
+    rh850_cpu_unpack_psw(env, psw & rh850_psw_wmask(env));
     env->ll_valid = 0;
 }
 
