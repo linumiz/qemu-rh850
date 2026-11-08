@@ -57,6 +57,8 @@ typedef struct RH850U2XChip {
     uint64_t cpuperi_size;
     RH850U2XRegion cram[RH850_U2X_NCRAM];
     uint32_t intc_channels;
+    const uint32_t (*level)[2];
+    unsigned nlevel;
     hwaddr ostm_base[RH850_U2X_NOSTM];
     uint16_t ostm_irq[RH850_U2X_NOSTM];
     hwaddr rlin3_base[RH850_U2X_NRLIN3];

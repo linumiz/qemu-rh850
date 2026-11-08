@@ -60,7 +60,8 @@ the G4MH2 CPU core (``-cpu g4mh2``). They emulate:
    CPU0 (64 KiB at 0xfdc00000, with its self view at 0xfde00000) and the
    cluster RAM
 -  Interrupt controller (INTC1 of CPU0, INTC2, FENMI and FEINT) with 768
-   (U2A) or 1024 (U2B) channels; all channels are edge detected
+   (U2A) or 1024 (U2B) channels, edge or level detected as on the U2A16 and
+   U2B24
 -  OS timers OSTM0 and OSTM1
 -  RLIN3 UART units (UART mode); on U2B, RLIN36 to RLIN322 have no
    interrupt connected

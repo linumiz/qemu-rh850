@@ -15,6 +15,7 @@
 #include "hw/misc/sifive_test.h"
 #include "hw/misc/unimp.h"
 #include "hw/rh850/u2x.h"
+#include "qobject/qlist.h"
 #include "system/reset.h"
 #include "system/system.h"
 #include "system/address-spaces.h"
@@ -64,11 +65,17 @@ static void rh850_u2x_intc_init(RH850U2XMachineState *s,
 {
     SysBusDevice *sbd = SYS_BUS_DEVICE(&s->intc);
     DeviceState *cpu = DEVICE(&s->cpu);
-    int i;
+    QList *level = qlist_new();
+    unsigned i;
 
+    for (i = 0; i < chip->nlevel; i++) {
+        qlist_append_int(level, chip->level[i][0]);
+        qlist_append_int(level, chip->level[i][1]);
+    }
     qdev_prop_set_uint32(DEVICE(sbd), "num-channels", chip->intc_channels);
     qdev_prop_set_uint8(DEVICE(sbd), "prio-bits", 6);
     qdev_prop_set_bit(DEVICE(sbd), "u2c-level-table", false);
+    qdev_prop_set_array(DEVICE(sbd), "level-ranges", level);
     sysbus_realize(sbd, &error_fatal);
     sysbus_mmio_map(sbd, 0, RH850_U2X_INTC1_PE0_BASE);
     sysbus_mmio_map(sbd, 1, RH850_U2X_INTC2_BASE);
@@ -239,6 +246,9 @@ static void rh850_u2x_class_init(ObjectClass *oc, const void *data)
                                           "test programs (default off)");
 }
 
+#include "u2a16_level.c.inc"
+#include "u2b24_level.c.inc"
+
 static const RH850U2XChip rh850_u2a_chip = {
     .desc = "Renesas RH850/U2A16 (G4MH2, CPU0 only)",
     .sysctl_chip = "u2a",
@@ -252,6 +262,8 @@ static const RH850U2XChip rh850_u2a_chip = {
         { 0xfe800000, 256 * KiB },
     },
     .intc_channels = 768,
+    .level = rh850_u2a16_level,
+    .nlevel = ARRAY_SIZE(rh850_u2a16_level),
     .ostm_base = { 0xffbf0000, 0xffbf0100 },
     .ostm_irq = { 199, 200 },
     .rlin3_base = {
@@ -291,6 +303,8 @@ static const RH850U2XChip rh850_u2b_chip = {
         { 0xfe800000, 0x220000 },
     },
     .intc_channels = 1024,
+    .level = rh850_u2b24_level,
+    .nlevel = ARRAY_SIZE(rh850_u2b24_level),
     .ostm_base = { 0xffbf0000, 0xff89a100 },
     .ostm_irq = { 360, 361 },
     .rlin3_base = {
