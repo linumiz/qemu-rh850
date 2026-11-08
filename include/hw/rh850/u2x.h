@@ -11,6 +11,8 @@
 #include "hw/timer/renesas_ostm.h"
 #include "hw/char/renesas_rlin3.h"
 #include "hw/rh850/u2c_sysctl.h"
+#include "hw/rh850/u2b_intsel.h"
+#include "hw/core/split-irq.h"
 #include "qemu/units.h"
 #include "target/rh850/cpu.h"
 
@@ -63,6 +65,7 @@ typedef struct RH850U2XChip {
     uint16_t ostm_irq[RH850_U2X_NOSTM];
     hwaddr rlin3_base[RH850_U2X_NRLIN3];
     uint16_t rlin3_irq[RH850_U2X_NRLIN3];
+    const uint16_t *intsel_irq;
 } RH850U2XChip;
 
 struct RH850U2XMachineClass {
@@ -80,6 +83,8 @@ struct RH850U2XMachineState {
     RenesasOSTMState ostm[RH850_U2X_NOSTM];
     RenesasRLIN3State rlin3[RH850_U2X_NRLIN3];
     RH850U2CSysctlState sysctl;
+    RH850U2BIntselState intsel;
+    SplitIRQ rlin3_split[RH850_U2X_NRLIN3][RENESAS_RLIN3_NIRQ];
     Clock *clk_hsb;
     uint32_t clk_hsb_hz;
     bool test_exit;

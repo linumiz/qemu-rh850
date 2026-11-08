@@ -3,7 +3,7 @@
 
 rh850_ss = ss.source_set()
 rh850_ss.add(when: 'CONFIG_RH850_U2C', if_true: files('u2c.c'))
-rh850_ss.add(when: 'CONFIG_RH850_U2X', if_true: files('u2x.c'))
+rh850_ss.add(when: 'CONFIG_RH850_U2X', if_true: files('u2x.c', 'u2b_intsel.c'))
 rh850_ss.add(when: 'CONFIG_RH850_SYSCTL', if_true: files('u2c_sysctl.c'))
 
 hw_arch += {'rh850': rh850_ss}

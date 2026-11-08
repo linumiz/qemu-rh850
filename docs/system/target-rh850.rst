@@ -63,8 +63,8 @@ the G4MH2 CPU core (``-cpu g4mh2``). They emulate:
    (U2A) or 1024 (U2B) channels, edge or level detected as on the U2A16 and
    U2B24
 -  OS timers OSTM0 and OSTM1
--  RLIN3 UART units (UART mode); on U2B, RLIN36 to RLIN322 have no
-   interrupt connected
+-  RLIN3 UART units (UART mode); on U2B, the interrupts of RLIN36 to RLIN322
+   go through the RLIN3INTSEL0 to RLIN3INTSEL5 selection registers
 -  The clock controller, standby controller and reset controller registers
    used to start the RLIN3 and OSTM units, and the software system reset
 

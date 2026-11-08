@@ -118,6 +118,50 @@ static void rh850_u2x_ostm_init(RH850U2XMachineState *s,
     }
 }
 
+static void rh850_u2x_intsel_init(RH850U2XMachineState *s,
+                                  const RH850U2XChip *chip)
+{
+    SysBusDevice *sbd;
+    int m, k;
+
+    object_initialize_child(OBJECT(s), "intsel", &s->intsel,
+                            TYPE_RH850_U2B_INTSEL);
+    sbd = SYS_BUS_DEVICE(&s->intsel);
+    sysbus_realize(sbd, &error_fatal);
+    sysbus_mmio_map(sbd, 0, RH850_U2B_INTSEL_BASE);
+    for (m = 0; m < RH850_U2B_INTSEL_NMUX; m++) {
+        for (k = 0; k < RH850_U2B_INTSEL_NLINE; k++) {
+            sysbus_connect_irq(sbd, m * RH850_U2B_INTSEL_NLINE + k,
+                               qdev_get_gpio_in(DEVICE(&s->intc),
+                                                chip->intsel_irq[m] + k));
+        }
+    }
+}
+
+static qemu_irq rh850_u2x_rlin3_route(RH850U2XMachineState *s,
+                                      const RH850U2XChip *chip, int n, int k)
+{
+    qemu_irq sel = qdev_get_gpio_in(DEVICE(&s->intsel),
+                                    (n - RH850_U2B_INTSEL_FIRST) *
+                                    RH850_U2B_INTSEL_NLINE + k);
+    g_autofree char *name = NULL;
+    DeviceState *split;
+
+    if (!chip->rlin3_irq[n]) {
+        return sel;
+    }
+    name = g_strdup_printf("rlin3%d-split%d", n, k);
+    object_initialize_child(OBJECT(s), name, &s->rlin3_split[n][k],
+                            TYPE_SPLIT_IRQ);
+    split = DEVICE(&s->rlin3_split[n][k]);
+    qdev_prop_set_uint16(split, "num-lines", 2);
+    qdev_realize(split, NULL, &error_fatal);
+    qdev_connect_gpio_out(split, 0, qdev_get_gpio_in(DEVICE(&s->intc),
+                                                     chip->rlin3_irq[n] + k));
+    qdev_connect_gpio_out(split, 1, sel);
+    return qdev_get_gpio_in(split, 0);
+}
+
 static void rh850_u2x_rlin3_init(RH850U2XMachineState *s,
                                  const RH850U2XChip *chip)
 {
@@ -135,6 +179,14 @@ static void rh850_u2x_rlin3_init(RH850U2XMachineState *s,
         qdev_prop_set_chr(dev, "chardev", chr);
         sysbus_realize(SYS_BUS_DEVICE(dev), &error_fatal);
         sysbus_mmio_map(SYS_BUS_DEVICE(dev), 0, chip->rlin3_base[n]);
+        if (chip->intsel_irq && n >= RH850_U2B_INTSEL_FIRST &&
+            n < RH850_U2B_INTSEL_FIRST + RH850_U2B_INTSEL_NUNIT) {
+            for (k = 0; k < RENESAS_RLIN3_NIRQ; k++) {
+                sysbus_connect_irq(SYS_BUS_DEVICE(dev), k,
+                                   rh850_u2x_rlin3_route(s, chip, n, k));
+            }
+            continue;
+        }
         if (!chip->rlin3_irq[n]) {
             continue;
         }
@@ -162,6 +214,9 @@ static void rh850_u2x_init(MachineState *machine)
                             TYPE_RH850_INTC);
     rh850_u2x_intc_init(s, chip);
     rh850_u2x_ostm_init(s, chip);
+    if (chip->intsel_irq) {
+        rh850_u2x_intsel_init(s, chip);
+    }
     rh850_u2x_rlin3_init(s, chip);
     object_initialize_child(OBJECT(machine), "sysctl", &s->sysctl,
                             TYPE_RH850_U2C_SYSCTL);
@@ -290,6 +345,12 @@ static void rh850_u2a_class_init(ObjectClass *oc, const void *data)
     mc->desc = uc->chip->desc;
 }
 
+static const uint16_t rh850_u2b_intsel_irq[RH850_U2B_INTSEL_NMUX] = {
+    320, 328, 332, 344, 348, 387, 391, 521, 525, 529, 545, 549,
+    553, 557, 564, 568, 572, 733, 737, 765, 769, 773, 777, 781,
+    785, 789, 882, 890, 894, 898, 902, 906, 951, 955,
+};
+
 static const RH850U2XChip rh850_u2b_chip = {
     .desc = "Renesas RH850/U2B24 (G4MH2, CPU0 only)",
     .sysctl_chip = "u2b",
@@ -316,10 +377,11 @@ static const RH850U2XChip rh850_u2b_chip = {
         0xffc7d400, 0xff89c500, 0xffc7d600, 0xff978000,
     },
     .rlin3_irq = {
-        620, 625, 630, 635, 640, 644, 0, 0,
+        620, 625, 630, 635, 640, 644, 992, 996,
         0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 648,
     },
+    .intsel_irq = rh850_u2b_intsel_irq,
 };
 
 static void rh850_u2b_class_init(ObjectClass *oc, const void *data)
