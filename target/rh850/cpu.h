@@ -168,6 +168,7 @@ struct ArchCPU {
     GDBFeature gdb_sreg_feature;
     uint16_t gdb_sreg[RH850_GDB_MAX_SREGS];
     int gdb_nsreg;
+    GDBFeature gdb_fxu_feature;
 };
 
 struct RH850CPUClass {

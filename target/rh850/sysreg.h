@@ -80,6 +80,7 @@ enum {
     RH850_SR_PMUMCTRL = 11 << 5 | 8,
     RH850_SR_FXSR = 10 << 5 | 6,
     RH850_SR_FXST = 10 << 5 | 8,
+    RH850_SR_FXINFO = 10 << 5 | 9,
     RH850_SR_FXCFG = 10 << 5 | 10,
     RH850_SR_FXXC = 10 << 5 | 12,
     RH850_SR_FXXP = 10 << 5 | 13,
