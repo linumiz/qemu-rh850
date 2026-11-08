@@ -51,6 +51,7 @@ struct RH850INTCState {
 
     uint32_t nch;
     uint8_t prio_bits;
+    bool u2c_level_table;
     uint32_t nlevel_ranges;
     uint32_t *level_ranges;
 

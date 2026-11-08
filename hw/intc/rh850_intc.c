@@ -484,7 +484,7 @@ static void rh850_intc_realize(DeviceState *dev, Error **errp)
             rh850_intc_set_level(s, s->level_ranges[i],
                                  s->level_ranges[i + 1], &err);
         }
-    } else {
+    } else if (s->u2c_level_table) {
         for (i = 0; i < ARRAY_SIZE(rh850_u2c8_level) && !err; i++) {
             rh850_intc_set_level(s, rh850_u2c8_level[i][0],
                                  rh850_u2c8_level[i][1], &err);
@@ -514,6 +514,7 @@ static void rh850_intc_unrealize(DeviceState *dev)
 static const Property rh850_intc_properties[] = {
     DEFINE_PROP_UINT32("num-channels", RH850INTCState, nch, RH850_INTC_NCH),
     DEFINE_PROP_UINT8("prio-bits", RH850INTCState, prio_bits, 4),
+    DEFINE_PROP_BOOL("u2c-level-table", RH850INTCState, u2c_level_table, true),
     DEFINE_PROP_ARRAY("level-ranges", RH850INTCState, nlevel_ranges,
                       level_ranges, qdev_prop_uint32, uint32_t),
 };
