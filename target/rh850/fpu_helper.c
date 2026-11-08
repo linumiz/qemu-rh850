@@ -6,6 +6,7 @@
 #include "qemu/osdep.h"
 #include "cpu.h"
 #include "sysreg.h"
+#include "fxu.h"
 #include "exec/helper-proto.h"
 #include "accel/tcg/cpu-loop.h"
 #include "fpu/softfloat.h"
@@ -90,6 +91,7 @@ enum {
     FOP_ADD, FOP_SUB, FOP_MUL, FOP_DIV,
     FOP_SQRT, FOP_RECIP, FOP_RSQRT,
     FOP_FMA, FOP_FMS, FOP_FNMA, FOP_FNMS,
+    FOP_MAX, FOP_MIN,
 };
 
 static int fop_nops(int op)
@@ -619,3 +621,112 @@ void HELPER(cmpf_##SUF)(CPURH850State *env, UT a, UT b, uint32_t ctl)       \
 
 FPU_CMPF(float32, uint32_t)
 FPU_CMPF(float64, uint64_t)
+
+typedef struct RH850FxuLane {
+    uint8_t op, neg, a, al, b, bl, c, cl;
+} RH850FxuLane;
+
+#include "fxu-lanes.c.inc"
+
+static void fxu_apply(CPURH850State *env, const uint32_t *val,
+                      const uint32_t *c, int rd, uintptr_t ra)
+{
+    uint32_t *fxsr = &RH850_SR(env, RH850_SR_FXSR);
+    uint32_t xe = ((*fxsr >> FPSR_XE_SHIFT) & FPSR_CAUSES) | FPC_E;
+    uint32_t xc = 0, fxxc = 0, fxxp = 0;
+    bool trap = false;
+    int n;
+
+    for (n = 0; n < 4; n++) {
+        xc |= c[n];
+        fxxc = deposit32(fxxc, n * 8, 6, c[n]);
+        fxxp = deposit32(fxxp, n * 8, 5, c[n]);
+        trap |= (c[n] & xe) != 0;
+    }
+    if (xc & FPC_IF) {
+        *fxsr |= FPSR_IF;
+    }
+    if (trap) {
+        *fxsr = deposit32(*fxsr, FPSR_XC_SHIFT, 6, xc);
+        RH850_SR(env, RH850_SR_FXXC) = fxxc;
+        rh850_raise_exception(env, RH850_EXCP_FXE, RH850_CAUSE_FXE, ra);
+    }
+    *fxsr |= xc & FPSR_CAUSES;
+    RH850_SR(env, RH850_SR_FXXP) |= fxxp;
+    memcpy(env->wr[rd], val, sizeof(env->wr[rd]));
+}
+
+void HELPER(fxu_arith)(CPURH850State *env, uint32_t id, uint32_t regs)
+{
+    float_status *s = &env->fxu_status;
+    uint32_t sr = RH850_SR(env, RH850_SR_FXSR);
+    int reg[4] = { 0, extract32(regs, 0, 5), extract32(regs, 5, 5),
+                   extract32(regs, 10, 5) };
+    uint32_t val[4], c[4];
+    int n;
+
+    for (n = 0; n < 4; n++) {
+        const RH850FxuLane *l = &rh850_fxu_lanes[id][n];
+        uint32_t a = env->wr[reg[l->a]][l->al];
+        uint32_t b = env->wr[reg[l->b]][l->bl];
+        uint32_t d = env->wr[reg[l->c]][l->cl];
+
+        switch (l->op) {
+        case FOP_MAX:
+        case FOP_MIN:
+            val[n] = fp_minmax_float32(s, l->op == FOP_MAX, a, b, &c[n]);
+            break;
+        case FOP_RECIP:
+            val[n] = fp_arith_float32(s, sr, FOP_DIV, false,
+                                      float32_val(float32_one), a, 0, &c[n]);
+            break;
+        default:
+            val[n] = fp_arith_float32(s, sr, l->op, l->neg, a, b, d, &c[n]);
+            break;
+        }
+    }
+    fxu_apply(env, val, c, reg[3], GETPC());
+}
+
+void HELPER(fxu_cvt)(CPURH850State *env, uint32_t ctl, uint32_t regs)
+{
+    float_status *s = &env->fxu_status;
+    uint32_t sr = RH850_SR(env, RH850_SR_FXSR);
+    int r2 = extract32(regs, 5, 5), r3 = extract32(regs, 10, 5);
+    uint32_t val[4], c[4];
+    int n;
+
+    for (n = 0; n < 4; n++) {
+        uint32_t a = env->wr[r2][n];
+
+        switch (ctl >> 4) {
+        case FXCVT_F2I:
+            val[n] = fp_f2i_float32_32(s, sr, a, ctl & 15, &c[n]);
+            break;
+        case FXCVT_I2F:
+            val[n] = fp_i2f(s, a, ctl & 15, false, false, &c[n]);
+            break;
+        case FXCVT_S2H:
+            val[n] = float16_val(fp_f2f_sh(s, sr, a, &c[n]));
+            break;
+        default:
+            val[n] = fp_h2s(s, a, &c[n]);
+            break;
+        }
+    }
+    fxu_apply(env, val, c, r3, GETPC());
+}
+
+void HELPER(fxu_cmpf)(CPURH850State *env, uint32_t fcond, uint32_t regs)
+{
+    int r1 = extract32(regs, 0, 5), r2 = extract32(regs, 5, 5);
+    uint32_t val[4], c[4];
+    int n;
+
+    for (n = 0; n < 4; n++) {
+        val[n] = fp_cmpf_float32(&env->fxu_status, env->wr[r2][n],
+                                 env->wr[r1][n], fcond, &c[n]) ?
+                 UINT32_MAX : 0;
+    }
+    fxu_apply(env, val, c, extract32(regs, 10, 5), GETPC());
+}

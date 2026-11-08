@@ -30,6 +30,7 @@ static const struct {
     [RH850_EXCP_TRAP] = { false, false, 0x040, "TRAP" },
     [RH850_EXCP_FPE] = { false, false, 0x070, "FPE" },
     [RH850_EXCP_FPI] = { false, false, 0x070, "FPI" },
+    [RH850_EXCP_FXE] = { false, false, 0x070, "FXE" },
     [RH850_EXCP_FENMI] = { true, true, 0x0e0, "FENMI" },
     [RH850_EXCP_FEINT] = { true, true, 0x0f0, "FEINT" },
     [RH850_EXCP_EIINT] = { false, true, 0, "EIINT" },
