@@ -85,9 +85,9 @@ enum {
 
 enum {
     RH850_NUM_GPRS = 32,
-    RH850_NUM_SELID = 13,
+    RH850_NUM_SELID = 16,
     RH850_NUM_REGID = 32,
-    RH850_MPU_ENTRIES = 24,
+    RH850_MPU_ENTRIES = 32,
     RH850_MPU_MPID = 8,
     RH850_GDB_NUM_REGS = 406,
 };

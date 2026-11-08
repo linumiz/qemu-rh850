@@ -11,6 +11,7 @@
 #include "accel/tcg/cpu-loop.h"
 
 #include "sysreg-table.c.inc"
+#include "sysreg-g4mh2-table.c.inc"
 
 const RH850CPUDef rh850_g4kh_def = {
     .pid = 0x08040701u,
@@ -21,6 +22,15 @@ const RH850CPUDef rh850_g4kh_def = {
     .insns = 0,
 };
 
+const RH850CPUDef rh850_g4mh2_def = {
+    .pid = 0x07840700u,
+    .prio_bits = 6,
+    .mpu_entries = 32,
+    .nsysregs = ARRAY_SIZE(rh850_g4mh2_sysregs),
+    .sysregs = rh850_g4mh2_sysregs,
+    .insns = 0,
+};
+
 static const RH850SysRegInfo *rh850_sysreg_find(CPURH850State *env,
                                                 unsigned sel, unsigned id)
 {
@@ -28,8 +38,14 @@ static const RH850SysRegInfo *rh850_sysreg_find(CPURH850State *env,
     unsigned i;
 
     for (i = 0; i < def->nsysregs; i++) {
-        if (def->sysregs[i].sel == sel && def->sysregs[i].id == id) {
-            return &def->sysregs[i];
+        const RH850SysRegInfo *r = &def->sysregs[i];
+
+        if (r->sel == sel && r->id == id) {
+            if ((r->flags & RH850_SRF_HV) &&
+                !(RH850_SR(env, RH850_SR_HVCFG) & 1)) {
+                return NULL;
+            }
+            return r;
         }
     }
     return NULL;
@@ -94,6 +110,11 @@ static void rh850_sysreg_check(CPURH850State *env, const RH850SysRegInfo *r,
         rh850_raise_exception(env, RH850_EXCP_PIE, RH850_CAUSE_PIE, ra);
     case RH850_SR_PMU:
         if (!(RH850_SR(env, RH850_SR_PMUMCTRL) & (1u << ((id - 16) / 2)))) {
+            rh850_raise_exception(env, RH850_EXCP_PIE, RH850_CAUSE_PIE, ra);
+        }
+        break;
+    case RH850_SR_PMU_N:
+        if (!(RH850_SR(env, RH850_SR_PMUMCTRL) & (1u << (id & 7)))) {
             rh850_raise_exception(env, RH850_EXCP_PIE, RH850_CAUSE_PIE, ra);
         }
         break;
@@ -247,8 +268,13 @@ bool rh850_sysreg_set(CPURH850State *env, unsigned sel, unsigned id,
     if ((sel << 5 | id) == RH850_SR_FPSR) {
         rh850_fpu_sync(env);
     }
-    if ((sel << 5 | id) == RH850_SR_RBNR && env->sr[sel][id] > 16) {
+    if ((sel << 5 | id) == RH850_SR_RBNR && env->sr[sel][id] > 16 &&
+        env_archcpu(env)->def->prio_bits == 4) {
         env->sr[sel][id] = 16;
+    }
+    if ((sel << 5 | id) == RH850_SR_INTCFG &&
+        (env->sr[sel][id] & RH850_INTCFG_EPL)) {
+        env->sr[sel][id] &= ~RH850_INTCFG_ISPC;
     }
     return true;
 }

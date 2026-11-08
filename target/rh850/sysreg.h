@@ -15,6 +15,7 @@ enum {
     RH850_SR_CU1_SV,
     RH850_SR_CU1,
     RH850_SR_PMU,
+    RH850_SR_PMU_N,
     RH850_SR_UMR_SVW,
 };
 
@@ -24,6 +25,7 @@ enum {
     RH850_SRF_ISPR = 1 << 2,
     RH850_SRF_SVLOCK = 1 << 3,
     RH850_SRF_MPIDX = 1 << 4,
+    RH850_SRF_HV = 1 << 5,
 };
 
 struct RH850SysRegInfo {
@@ -55,6 +57,7 @@ enum {
     RH850_SR_CTBP = 0 << 5 | 20,
     RH850_SR_RBASE = 1 << 5 | 2,
     RH850_SR_PID = 1 << 5 | 6,
+    RH850_SR_HVCFG = 1 << 5 | 16,
     RH850_SR_EBASE = 1 << 5 | 3,
     RH850_SR_MCTL = 1 << 5 | 5,
     RH850_SR_SVLOCK = 1 << 5 | 8,
@@ -83,9 +86,11 @@ enum {
 #define RH850_BASE_RINT     (1u << 0)
 #define RH850_BASE_DV       (1u << 1)
 #define RH850_INTCFG_ISPC   (1u << 0)
+#define RH850_INTCFG_EPL    (1u << 1)
 #define RH850_MPCFG_NMPUE   0x1fu
 
 extern const RH850CPUDef rh850_g4kh_def;
+extern const RH850CPUDef rh850_g4mh2_def;
 
 void rh850_sysreg_reset(CPURH850State *env);
 uint32_t rh850_sysreg_wmask(CPURH850State *env, unsigned n);
