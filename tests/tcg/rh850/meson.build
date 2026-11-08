@@ -20,6 +20,16 @@ foreach t: ['t001', 't010', 't012', 't020', 't030', 't150', 't151', 't163',
   tests += {t + '.s': setup}
 endforeach
 
+foreach m: [['rh850-u2a', ['t341', 't342', 't343', 't344', 't345', 't346']],
+             ['rh850-u2b', ['t347']]]
+  foreach t: m[1]
+    tests += {t + '.s': {'cflags': asmflags,
+                         'qemu_args': ['-M', m[0] + ',test-exit=on',
+                                       '-display', 'none', '-monitor', 'none',
+                                       '-serial', 'none', '-kernel']}}
+  endforeach
+endforeach
+
 tests += {
   't141.s': {'cflags': asmflags + ['-Wa,-mextension'], 'qemu_args': qemu_args},
   't320.s': {'cflags': asmflags,
